@@ -33,7 +33,7 @@ The program will print the routing waves, paths, and a summary directly to the s
 The repository includes a `testdata` folder containing sample netlists for testing:
 - `testdata/sample.net` (Small grid test)
 - `testdata/testcase1.net` (Standard grid test case)
-- `testdata/testcase2.net` (Larger grid test case)
+- `testdata/testcase2.net` (Test case with more obstructions)
 
 To run a test case, pass the path of the netlist file to the compiled executable. For example:
 ```bash
