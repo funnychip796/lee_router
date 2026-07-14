@@ -6,7 +6,7 @@ A simple grid routing tool based on the classic **Lee-Moore Algorithm** (also kn
 
 1. **Wave Expansion (Spread)**: Starts from the source pin and spreads outwards to adjacent cells step-by-step (like ripples in water) until it reaches the destination pin.
 2. **Backtracing (Retrace)**: Once the destination is found, the algorithm traces back through the recorded steps to draw the shortest path.
-3. **Re-routing (Retry)**: When routing multiple wires, the order in which they are routed matters. The program automatically tries different routing sequences to successfully route as many wires as possible.
+3. **Re-routing (Retry)**: If a wire fails to route due to blockages, the grid is cleared, the failed wire is moved to the highest priority (front of the queue), and routing restarts.
 
 ## Compilation
 
