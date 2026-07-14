@@ -1,0 +1,11 @@
+# Compile targets
+lee_router
+lee_test
+
+# Object files
+*.o
+*.obj
+
+# Output files
+routing_result.txt
+*.out
