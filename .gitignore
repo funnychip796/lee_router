@@ -7,5 +7,5 @@ lee_test
 *.obj
 
 # Output files
-routing_result.txt
+*.txt
 *.out

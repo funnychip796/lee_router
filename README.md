@@ -27,3 +27,15 @@ Run the program by providing your grid netlist file:
 ./lee_router grid.net
 ```
 The program will print the routing waves, paths, and a summary directly to the screen (stdout).
+
+## Running Test Cases
+
+The repository includes a `testdata` folder containing sample netlists for testing:
+- `testdata/sample.net` (Small grid test)
+- `testdata/testcase1.net` (Standard grid test case)
+- `testdata/testcase2.net` (Larger grid test case)
+
+To run a test case, pass the path of the netlist file to the compiled executable. For example:
+```bash
+./lee_router testdata/testcase1.net
+```
