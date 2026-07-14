@@ -37,73 +37,7 @@ void my_reverse_all(vector<T>& v) {
     my_reverse(v, 0, static_cast<int>(v.size()));
 }
 
-/*
- * Merges two sorted sub-vectors while preserving the stability of the sort.
- */
-template <typename T, typename Cmp>
-void merge_helper(vector<T>& v, int lo, int mid, int hi, Cmp cmp) {
-    vector<T> tmp;
-    tmp.reserve(static_cast<size_t>(hi - lo));
-    int i = lo, j = mid;
-    while (i < mid && j < hi) {
-        if (!cmp(v[j], v[i]))
-            tmp.push_back(v[i++]);
-        else
-            tmp.push_back(v[j++]);
-    }
-    while (i < mid) tmp.push_back(v[i++]);
-    while (j < hi)  tmp.push_back(v[j++]);
-    for (int k = lo; k < hi; ++k) v[k] = tmp[k - lo];
-}
 
-/*
- * Recursive core logic for merge sort.
- */
-template <typename T, typename Cmp>
-void my_merge_sort(vector<T>& v, int lo, int hi, Cmp cmp) {
-    if (hi - lo <= 1) return;
-    int mid = lo + (hi - lo) / 2;
-    my_merge_sort(v, lo, mid, cmp);
-    my_merge_sort(v, mid, hi, cmp);
-    merge_helper(v, lo, mid, hi, cmp);
-}
-
-/*
- * Provides a stable sorting interface for the entire vector.
- */
-template <typename T, typename Cmp>
-void my_stable_sort(vector<T>& v, Cmp cmp) {
-    my_merge_sort(v, 0, static_cast<int>(v.size()), cmp);
-}
-
-/*
- * Generates the next lexicographical permutation of the sequence. If the sequence is already the largest permutation, reverses it to the smallest permutation and returns false.
- */
-template <typename T>
-bool my_next_permutation(vector<T>& v) {
-    int n = static_cast<int>(v.size());
-    if (n <= 1) return false;
-
-    int i = n - 2;
-    while (i >= 0 && !(v[i] < v[i + 1])) --i;
-
-    if (i < 0) {
-        my_reverse(v, 0, n);
-        return false;
-    }
-
-    int j = n - 1;
-    while (!(v[i] < v[j])) --j;
-
-    my_swap(v[i], v[j]);
-    my_reverse(v, i + 1, n);
-    return true;
-}
-
-/*
- * Calculates and returns the absolute value of an integer.
- */
-int my_abs(int x) { return x < 0 ? -x : x; }
 
 /*
  * Manages a set of points based on a 2D boolean array to check grid coordinate occupancy in O(1) time.
@@ -121,7 +55,6 @@ struct PointSet {
         return true;
     }
 
-    bool count(int x, int y) const { return used[y][x]; }
 };
 
 struct Point {
@@ -130,9 +63,7 @@ struct Point {
     Point() : x(0), y(0) {}
     Point(int x_, int y_) : x(x_), y(y_) {}
     bool operator==(const Point& o) const { return x == o.x && y == o.y; }
-    bool operator<(const Point& o)  const {
-        return (y < o.y) || (y == o.y && x < o.x);
-    }
+
 };
 
 struct Net {
@@ -440,65 +371,50 @@ bool better(const RouteAttempt& a, const RouteAttempt& b) {
     return a.total_wirelength < b.total_wirelength;
 }
 
-/*
- * Attempts routing in the specified order and updates the best solution if the candidate is better than the current best.
- */
-void consider_order(const Problem& p,
-                            const vector<int>& order,
-                            RouteAttempt& best) {
-    RouteAttempt cand = route_in_order(p, order);
-    if (better(cand, best)) best = cand;
-}
+
 
 /*
- * Functor: Compares the Manhattan distance of two nets, used to prioritize routing the longest nets first.
- */
-struct LongestFirst {
-    const vector<Net>& nets;
-    explicit LongestFirst(const vector<Net>& n) : nets(n) {}
-    bool operator()(int a, int b) const {
-        const Net& na = nets[static_cast<size_t>(a)];
-        const Net& nb = nets[static_cast<size_t>(b)];
-        int da = my_abs(na.source.x - na.sink.x) + my_abs(na.source.y - na.sink.y);
-        int db = my_abs(nb.source.x - nb.sink.x) + my_abs(nb.source.y - nb.sink.y);
-        return da > db;
-    }
-};
-
-/*
- * Attempts multiple routing retries using various heuristic orders (failed-first, reversed, longest-distance-first, and exhaustive permutations for small sizes) to find the optimal result.
+ * Simple retry strategy: 
+ * Route nets in order. If a net fails, clear the grid, move the failed net
+ * to the highest priority (front of the order), and restart.
+ * Repeat up to N times.
  */
 RouteAttempt route_with_retries(const Problem& p) {
     const int N = static_cast<int>(p.nets.size());
 
-    vector<int> original(static_cast<size_t>(N));
+    vector<int> order(static_cast<size_t>(N));
     for (int i = 0; i < N; ++i)
-        original[static_cast<size_t>(i)] = i;
+        order[static_cast<size_t>(i)] = i;
 
-    RouteAttempt best = route_in_order(p, original);
+    RouteAttempt best = route_in_order(p, order);
+    if (best.routed_count == N) return best;
 
-    vector<int> failed_first;
-    for (int i = 0; i < N; ++i)
-        if (!best.net_routes[static_cast<size_t>(i)].success)
-            failed_first.push_back(i);
-    for (int i = 0; i < N; ++i)
-        if (best.net_routes[static_cast<size_t>(i)].success)
-            failed_first.push_back(i);
-    if (failed_first != original) consider_order(p, failed_first, best);
+    int max_retries = N;
+    for (int retry = 0; retry < max_retries; ++retry) {
+        int failed_net = -1;
+        for (int i = 0; i < N; ++i) {
+            if (!best.net_routes[static_cast<size_t>(i)].success) {
+                failed_net = i;
+                break;
+            }
+        }
+        if (failed_net == -1) break;
 
-    vector<int> rev_order = original;
-    my_reverse_all(rev_order);
-    consider_order(p, rev_order, best);
+        /* Move failed_net to the front of the order */
+        vector<int> new_order;
+        new_order.push_back(failed_net);
+        for (size_t i = 0; i < order.size(); ++i) {
+            if (order[i] != failed_net) {
+                new_order.push_back(order[i]);
+            }
+        }
+        order = new_order;
 
-    vector<int> longest_first = original;
-    my_stable_sort(longest_first, LongestFirst(p.nets));
-    consider_order(p, longest_first, best);
-
-    if (N <= 9) {
-        vector<int> perm = original;
-        do {
-            consider_order(p, perm, best);
-        } while (my_next_permutation(perm));
+        RouteAttempt attempt = route_in_order(p, order);
+        if (better(attempt, best)) {
+            best = attempt;
+        }
+        if (best.routed_count == N) break;
     }
 
     return best;
