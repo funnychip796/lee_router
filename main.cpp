@@ -10,7 +10,8 @@ using namespace std;
  * Swaps the values of two variables.
  */
 template <typename T>
-void my_swap(T& a, T& b) {
+void my_swap(T& a, T& b)
+{
     T tmp = a;
     a = b;
     b = tmp;
@@ -20,7 +21,8 @@ void my_swap(T& a, T& b) {
  * In-place reverses the elements of a vector within the range [first, last).
  */
 template <typename T>
-void my_reverse(vector<T>& v, int first, int last) {
+void my_reverse(vector<T>& v, int first, int last)
+{
     --last;
     while (first < last) {
         my_swap(v[first], v[last]);
@@ -33,7 +35,8 @@ void my_reverse(vector<T>& v, int first, int last) {
  * In-place reverses the entire vector.
  */
 template <typename T>
-void my_reverse_all(vector<T>& v) {
+void my_reverse_all(vector<T>& v)
+{
     my_reverse(v, 0, static_cast<int>(v.size()));
 }
 
@@ -49,7 +52,8 @@ struct PointSet {
     explicit PointSet(int grid_n)
         : n(grid_n), used(grid_n, vector<bool>(grid_n, false)) {}
 
-    bool insert(int x, int y) {
+    bool insert(int x, int y)
+    {
         if (used[y][x]) return false;
         used[y][x] = true;
         return true;
@@ -62,7 +66,10 @@ struct Point {
     int y;
     Point() : x(0), y(0) {}
     Point(int x_, int y_) : x(x_), y(y_) {}
-    bool operator==(const Point& o) const { return x == o.x && y == o.y; }
+    bool operator==(const Point& o) const
+    {
+        return x == o.x && y == o.y;
+    }
 
 };
 
@@ -108,7 +115,8 @@ const int TERMINAL    = -3;
 /*
  * Trims leading and trailing whitespace characters (including spaces, tabs, and newlines) from a string.
  */
-string trim(const string& s) {
+string trim(const string& s)
+{
     const size_t first = s.find_first_not_of(" \t\r\n");
     if (first == string::npos) return "";
     const size_t last = s.find_last_not_of(" \t\r\n");
@@ -118,14 +126,16 @@ string trim(const string& s) {
 /*
  * Checks if the given coordinate (x, y) is within the boundaries of the n x n grid.
  */
-bool in_bounds_n(int x, int y, int n) {
+bool in_bounds_n(int x, int y, int n)
+{
     return x >= 0 && y >= 0 && x < n && y < n;
 }
 
 /*
  * Parses the specified netlist file, extracts the grid size, obstruction positions, and net terminal coordinates, and performs format and boundary validations.
  */
-bool read_netlist(const string& filename, Problem& prob) {
+bool read_netlist(const string& filename, Problem& prob)
+{
     ifstream input(filename.c_str());
     if (!input) {
         cerr << "Error: Cannot open netlist: " << filename << '\n';
@@ -222,7 +232,7 @@ bool read_netlist(const string& filename, Problem& prob) {
     for (size_t i = 0; i < prob.nets.size(); ++i) {
         const Net& net = prob.nets[i];
         if (!in_bounds_n(net.source.x, net.source.y, prob.n) ||
-            !in_bounds_n(net.sink.x,   net.sink.y,   prob.n)) {
+                !in_bounds_n(net.sink.x,   net.sink.y,   prob.n)) {
             cerr << "Error: Net terminal outside grid\n";
             return false;
         }
@@ -247,8 +257,9 @@ bool read_netlist(const string& filename, Problem& prob) {
  * Uses the Lee-Moore algorithm to perform a breadth-first search for the shortest connection path from source to sink on a single net.
  */
 NetRoute lee_route(const Problem& p,
-                          const Net& net,
-                          const vector<vector<int> >& occupied) {
+                   const Net& net,
+                   const vector<vector<int> >& occupied)
+{
     static const int dx[4] = {1, -1, 0, 0};
     static const int dy[4] = {0, 0, 1, -1};
 
@@ -323,7 +334,8 @@ NetRoute lee_route(const Problem& p,
 /*
  * Generates and returns the initial occupancy matrix of the grid based on the original obstructions and all net terminals.
  */
-vector<vector<int> > make_initial_occupancy(const Problem& p) {
+vector<vector<int> > make_initial_occupancy(const Problem& p)
+{
     vector<vector<int> > occ(p.n, vector<int>(p.n, FREE));
     for (size_t i = 0; i < p.obstructions.size(); ++i)
         occ[p.obstructions[i].y][p.obstructions[i].x] = OBSTRUCTION;
@@ -337,7 +349,8 @@ vector<vector<int> > make_initial_occupancy(const Problem& p) {
 /*
  * Routes nets in the specified order, updating the occupancy matrix as paths are successfully routed, and returns the result of this routing attempt.
  */
-RouteAttempt route_in_order(const Problem& p, const vector<int>& order) {
+RouteAttempt route_in_order(const Problem& p, const vector<int>& order)
+{
     vector<vector<int> > occ = make_initial_occupancy(p);
 
     RouteAttempt result;
@@ -366,7 +379,8 @@ RouteAttempt route_in_order(const Problem& p, const vector<int>& order) {
 /*
  * Compares two routing attempts: prioritizes the number of successfully routed nets, and resolves ties by choosing the shorter total wirelength.
  */
-bool better(const RouteAttempt& a, const RouteAttempt& b) {
+bool better(const RouteAttempt& a, const RouteAttempt& b)
+{
     if (a.routed_count != b.routed_count) return a.routed_count > b.routed_count;
     return a.total_wirelength < b.total_wirelength;
 }
@@ -374,12 +388,13 @@ bool better(const RouteAttempt& a, const RouteAttempt& b) {
 
 
 /*
- * Simple retry strategy: 
+ * Simple retry strategy:
  * Route nets in order. If a net fails, clear the grid, move the failed net
  * to the highest priority (front of the order), and restart.
  * Repeat up to N times.
  */
-RouteAttempt route_with_retries(const Problem& p) {
+RouteAttempt route_with_retries(const Problem& p)
+{
     const int N = static_cast<int>(p.nets.size());
 
     vector<int> order(static_cast<size_t>(N));
@@ -423,7 +438,8 @@ RouteAttempt route_with_retries(const Problem& p) {
 /*
  * Formats and writes the detailed routing results to the standard output.
  */
-void write_result(const Problem& p, const RouteAttempt& result) {
+void write_result(const Problem& p, const RouteAttempt& result)
+{
     cout << "grid " << p.n << '\n';
     for (size_t i = 0; i < p.obstructions.size(); ++i)
         cout << "obstruction " << p.obstructions[i].x << ' ' << p.obstructions[i].y << '\n';
@@ -437,9 +453,9 @@ void write_result(const Problem& p, const RouteAttempt& result) {
         const NetRoute& route = result.net_routes[i];
 
         cout << "net " << net.id
-            << ' ' << net.source.x << ' ' << net.source.y
-            << ' ' << net.sink.x   << ' ' << net.sink.y
-            << ' ' << (route.success ? "routed" : "failed") << '\n';
+             << ' ' << net.source.x << ' ' << net.source.y
+             << ' ' << net.sink.x   << ' ' << net.sink.y
+             << ' ' << (route.success ? "routed" : "failed") << '\n';
 
         for (size_t wi = 0; wi < route.waves.size(); ++wi) {
             const WaveRecord& wave = route.waves[wi];
@@ -458,13 +474,14 @@ void write_result(const Problem& p, const RouteAttempt& result) {
     }
 
     cout << "summary " << result.routed_count << ' ' << p.nets.size()
-        << ' ' << result.total_wirelength << '\n';
+         << ' ' << result.total_wirelength << '\n';
 }
 
 /*
  * Entry point: parses command-line arguments, reads the netlist, executes routing retries, and writes results to stdout and run info to stderr.
  */
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     if (argc != 2) {
         cerr << "Usage: " << argv[0] << " <netlist>\n";
         return 1;
@@ -472,7 +489,7 @@ int main(int argc, char* argv[]) {
     const string in_file = argv[1];
 
     Problem prob;
-    
+
     if (!read_netlist(in_file, prob)) {
         return 1;
     }
